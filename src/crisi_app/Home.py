@@ -4,7 +4,7 @@ from pathlib import Path
 API_URL = "http://127.0.0.1:8000"
 
 
-LOGO_PATH = Path(r"C:\Users\USER\OneDrive\Desktop\crisi_v2\uaegean_logo.png")
+LOGO_PATH = Path(r"uaegean_logo.png")
 
 st.set_page_config(
     page_title="CRISI v2 — UAegean",

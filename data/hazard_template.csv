@@ -1,0 +1,14 @@
+﻿region_id,region_name,heat_factor,drought_factor
+EL11,Anatoliki Makedonia-Thraki,0.95,0.95
+EL12,Kentriki Makedonia,1.00,0.98
+EL13,Dytiki Makedonia,0.98,0.98
+EL14,Thessalia,1.05,1.00
+EL21,Ipeiros,0.93,0.96
+EL22,Ionia Nisia,1.10,1.10
+EL23,Dytiki Ellada,1.03,1.05
+EL24,Sterea Ellada,1.04,1.05
+EL25,Peloponnisos,1.05,1.08
+EL30,Attiki,1.15,1.10
+EL41,Voreio Aigaio,1.07,1.02
+EL42,Notio Aigaio,1.20,1.15
+EL43,Kriti,1.18,1.15

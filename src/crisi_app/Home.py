@@ -1,7 +1,8 @@
 import streamlit as st
 import requests
 from pathlib import Path
-API_URL = "http://127.0.0.1:8000"
+DEFAULT_API_URL = os.getenv("CRISI_BACKEND_URL", st.secrets.get("backend_url", ""))
+API_URL = DEFAULT_API_URL.rstrip("/")
 
 
 LOGO_PATH = Path(r"uaegean_logo.png")

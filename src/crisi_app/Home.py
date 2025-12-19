@@ -1,12 +1,9 @@
-import os 
 import streamlit as st
-import requests
 from pathlib import Path
-DEFAULT_API_URL = os.getenv("CRISI_BACKEND_URL", st.secrets.get("backend_url", ""))
-API_URL = DEFAULT_API_URL.rstrip("/")
+from crisi_core.config import DEFAULT_SCENARIOS
 
 
-LOGO_PATH = Path(r"uaegean_logo.png")
+LOGO_PATH = Path(r"C:\Users\USER\OneDrive\Desktop\crisi_v2\uaegean_logo.png")
 
 st.set_page_config(
     page_title="CRISI v2 — UAegean",
@@ -29,78 +26,56 @@ with col_text:
         "Creator: Vangelis Zaftis"
     )
 
-@st.cache_data(show_spinner=False)
-def check_api_health(api_url: str):
-    """Ping the FastAPI backend and fetch scenarios if possible."""
-    health = None
-    scenarios = None
-    error = None
-
-    try:
-        r = requests.get(f"{api_url}/health", timeout=3)
-        r.raise_for_status()
-        health = r.json()
-    except Exception as e:
-        error = f"Health check failed: {e}"
-        return health, scenarios, error
-
-    try:
-        r = requests.get(f"{api_url}/scenarios", timeout=5)
-        r.raise_for_status()
-        scenarios = r.json()
-    except Exception as e:
-        # Backend is up, but scenarios endpoint may have an issue
-        error = f"Could not load scenarios: {e}"
-
-    return health, scenarios, error
+#
+# In the original version of this page the app pinged a FastAPI backend to
+# check its status and list scenarios.  This refactored prototype has no
+# dependency on an external API: the Streamlit app imports the core
+# resilience and CBA functions directly and performs all computations
+# in‑memory.  See the scenario narratives section below for the list of
+# supported scenarios.
 
 
 
 st.markdown(
     """
-CRISI v2 is a prototype **climate-resilient investment scoring and CBA tool** for tourism
-projects under multiple climate–socioeconomic scenarios.
+CRISI v2 is a prototype **climate‑resilient investment scoring and cost–benefit analysis (CBA) tool** for
+tourism projects under multiple climate–socioeconomic scenarios.
 
-The app is split into pages (see the sidebar) that let you:
+Unlike earlier versions, this Streamlit app does **not** rely on a separate FastAPI backend;
+instead, it imports the core resilience and CBA functions directly.  All calculations run on the
+server hosting this app, so there is no external API to start or monitor.
 
-- Explore **resilience trajectories** by region and scenario  
-- Compare **scenarios** for the same region  
-- Run **CBA for a single project** under one scenario  
-- Compare **CBA across scenarios** for the same project  
-- Compare **with vs without adaptation** for a project under one scenario  
+Use the sidebar to navigate between pages.  The pages let you:
+
+- Explore **resilience trajectories** for a selected region and scenario.  
+- Compare **scenarios** for the same region.  
+- Perform **side‑by‑side comparisons** of regions and scenarios on a dashboard with maps and explainability.  
+- Run **CBA for a single project** under one or many scenarios.  
+- Compare **with vs without adaptation** for a project under a given scenario.  
+- Experiment with **AI/XAI surrogates** for resilience and CBA to see which inputs drive the results.
 """
 )
 
 # --------------------------------------------------------------------
-# API status panel
+# Scenario narratives
 # --------------------------------------------------------------------
-st.subheader("Backend status")
+st.subheader("Scenario narratives")
 
-health, scenarios, error = check_api_health(API_URL)
+st.markdown(
+    """
+CRISI v2 currently supports five stylised scenarios that span optimistic,
+middle‑of‑the‑road and pessimistic futures.  Each scenario combines a
+climate pathway (e.g. RCP4.5 vs RCP8.5) with a socio‑economic story (e.g.
+SSP1 vs SSP5).  The resilience and hazard trajectories in the app are
+synthetic and are meant to illustrate how different futures might unfold.
+"""
+)
 
-status_col, info_col = st.columns([1, 2])
-
-with status_col:
-    if health and health.get("status") == "ok":
-        st.success("FastAPI backend is **running**.")
-    else:
-        st.error("FastAPI backend is **not reachable**.")
-        if error:
-            st.write(error)
-
-with info_col:
-    if scenarios:
-        st.markdown("**Available scenarios:**")
-        for s in scenarios:
-            st.markdown(
-                f"- `{s['id']}` – **{s['name']}**  \n"
-                f"&nbsp;&nbsp;&nbsp;&nbsp;{s.get('description','')}"
-            )
-    else:
-        st.info(
-            "Scenarios could not be listed. If you just started the backend, "
-            "try refreshing the page."
-        )
+for sid, s in DEFAULT_SCENARIOS.items():
+    st.markdown(
+        f"- `{sid}` – **{s.name}**  \n"
+        f"&nbsp;&nbsp;&nbsp;&nbsp;{s.description}"
+    )
 
 st.write("---")
 
@@ -113,20 +88,20 @@ st.markdown(
     """
 ### 1. Resilience & scenarios
 
-- **01 – Resilience Explorer**  
-  Choose a region and a scenario and compute time series of:
-  - exposure (heat, drought),
-  - sensitivity (tourism dependence, arrivals, income vulnerability),
-  - adaptive capacity (education, health, governance),
-  - and the combined **resilience index**.
+- **Resilience Explorer**  
+  Select a region and a scenario to generate time‑series of **exposure** (heat, drought and, where available, flood risk), **sensitivity** (tourism dependence, arrivals and income vulnerability), **adaptive capacity** (education, health and governance) and the combined **resilience index**.  
+  Two modes are available:  
+  - **Policy defaults** use internally defined weights (e.g. expert‑based) for the pillars and subcomponents.  
+  - **Sandbox** lets you adjust weights and introduce wildcards to see how different assumptions affect the trajectory.
 
-  You can switch between:
-  - **Policy (fixed weights):** uses the default configuration (e.g. Delphi-based).
-  - **Sandbox (adjustable weights):** you can change pillar weights and sub-weights to see
-    how the resilience trajectory reacts.
+- **Scenario Comparison**  
+  View resilience trajectories for a single region across multiple scenarios on one chart.
 
-- **02 – Scenario Comparison**  
-  Compare resilience paths for the **same region** across several scenarios side by side.
+- **Comparison Dashboard**  
+  A multi‑tab dashboard to:  
+  - Compare **two regions** under the same scenario, including exposure/sensitivity/adaptive components and XAI summaries.  
+  - Compare **one region** across all scenarios using any metric (resilience, risk, exposure, sensitivity, adaptive).  
+  - Visualise values on a **map** of Greek NUTS‑2 regions with a colour legend.
 """
 )
 
@@ -134,32 +109,14 @@ st.markdown(
     """
 ### 2. Project CBA under climate uncertainty
 
-- **03 – Project CBA**  
-  Evaluate a single tourism investment under one scenario.  
-  You can configure:
-  - CAPEX, construction period, depreciation, salvage value  
-  - Revenue and OPEX dynamics, tax rate  
-  - Adaptation share of CAPEX and subsidies  
-  - Strength of the link between resilience and revenues  
+‑ **Project CBA Dashboard**  
+  Analyse a tourism investment’s financial performance under climate uncertainty.  The dashboard has three tabs:  
+  - **Resilience preview** shows the region’s resilience and risk trajectories for the chosen scenario and lets you adjust weights.  
+  - **CBA across scenarios** allows you to fix project parameters and compute **net present value (NPV)** under all scenarios.  It also offers explainable‑AI panels that decompose NPV drivers and provide a tornado sensitivity chart.  
+  - **Adaptation vs no‑adaptation** compares two variants of the project (with and without adaptation CAPEX/subsidy) for one scenario, reporting ΔNPV and visualising cashflow differences.
 
-  You can run it with:
-  - **Policy defaults** for resilience weights, or  
-  - **Custom (sandbox)** weights for sensitivity analysis.
-
-- **04 – Project CBA – Scenario Comparison**  
-  Hold project parameters fixed, change only the **scenario**, and compare:
-  - NPV  
-  - IRR  
-  - Payback year  
-  - Cumulative discounted cashflows  
-  across all selected scenarios.
-
-- **05 – Project CBA – With vs Without Adaptation**  
-  Compare two variants of the same project under **one scenario**:
-  - Case A: **no adaptation** (adaptation share ≈ 0, no subsidy)  
-  - Case B: **with adaptation** (adaptation CAPEX + subsidy)  
-
-  The page reports ΔNPV, ΔIRR, Δsubsidy and a simple *“subsidy efficiency”* metric (ΔNPV / Δsubsidy).
+‑ **AI/XAI Lab**  
+  A laboratory page that uses surrogate models (trained on synthetic CRISI runs) to approximate the resilience engine and CBA.  It provides **SHAP‑based explanations** for individual cases and grouped attributions, enabling rapid insight into which inputs push predictions up or down.  Use it for exploration and intuition, then validate conclusions on the core pages.
 """
 )
 

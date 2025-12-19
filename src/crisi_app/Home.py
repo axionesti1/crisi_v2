@@ -3,7 +3,7 @@ from pathlib import Path
 from crisi_core.config import DEFAULT_SCENARIOS
 
 
-LOGO_PATH = Path(r"C:\Users\USER\OneDrive\Desktop\crisi_v2\uaegean_logo.png")
+LOGO_PATH = Path(r"uaegean_logo.png")
 
 st.set_page_config(
     page_title="CRISI v2 — UAegean",
